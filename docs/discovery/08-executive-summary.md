@@ -1,10 +1,10 @@
 # Discovery Executive Summary
 
-**Project:** discovery12345 · **Generated:** 7/17/2026, 1:37:22 PM
+**Project:** discovery12345 · **Generated:** 7/17/2026, 1:53:54 PM
 
 > **Executive Summary**
 >
-> This report consolidates the overall ratings, key findings, and recommended actions from the 3 discovery analyses run across this codebase (frontend and backend). Each section below reproduces that analysis's executive view; full evidence and diagrams live in the individual reports.
+> This report consolidates the overall ratings, key findings, and recommended actions from the 4 discovery analyses run across this codebase (frontend and backend). Each section below reproduces that analysis's executive view; full evidence and diagrams live in the individual reports.
 
 ## Portfolio Overview
 
@@ -13,6 +13,7 @@
 | 1 | Architecture & Design Analysis | <span class="rating rating-high-risk">High Risk</span> | — |
 | 2 | Code Quality & Complexity Analysis | <span class="rating rating-high-risk">High Risk</span> | 76 / 100 — High Risk |
 | 3 | Frontend Modernization Analysis | <span class="rating rating-high-risk">High Risk</span> | — |
+| 4 | Backend Modernization Analysis | <span class="rating rating-high-risk">High Risk</span> | — |
 
 ---
 
@@ -164,3 +165,50 @@ Full report saved to `target/docs/discovery/02-code-quality-complexity.md` (321 
 - Redux Toolkit migration eliminates ~872 LOC of manual boilerplate and provides typed selectors, reducing the 49% global-store coupling through scoped domain hooks.
 - `ChatContext` collapses 10-prop drilling chains in messaging to single-hook consumption, simplifying addition of typing indicators and read receipts.
 - Replacing imperative DOM calls in `InputFilter` and `MessageThread` restores React-idiomatic rendering and prevents event-listener leaks during hot reload.
+
+---
+
+## 4. Backend Modernization Analysis
+
+<div class="overall-rating overall-rating--high-risk"><div class="overall-rating-label">Overall Codebase Rating — Backend Modernization</div><div class="overall-rating-value">High Risk</div><div class="overall-rating-note">Driven by H6 (0% documented/governed REST surface) and H7 (0% API governance compliance: no OpenAPI, versioning, or contract tests).</div></div>
+
+> **Executive Summary**
+>
+> The **ERM Complexity Demo** backend is a compact Spring Boot 2.7.18 monolith (17 Java source files, &lt;5K LOC) with a deliberate legacy-debt surface: static shared-business facades, duplicated controller logic, and dual Oracle/PostgreSQL dialect routing. Layering is partially sound—JPA access is confined to `RiskService` and `DemoDataLoader`, and controllers inject services rather than repositories—but modernization gaps remain in API governance and static coupling. Eight read-only REST endpoints under `/api` serve AngularJS panels with **no OpenAPI spec, no versioning, and no contract tests** (0% governance compliance). Dynamic-variable-from-input patterns were not observed; however, `SharedBusinessServices` static methods, a Spring singleton holding mutable RBAC state, N+1 repository calls in domain aggregation, and plaintext database passwords in profile properties require remediation before production hardening.
+
+## 4.1 Benchmark Ratings Summary
+
+| # | Hotspot | Primary KPI | <span class="rating rating-good">Good</span> | <span class="rating rating-moderate">Moderate</span> | <span class="rating rating-high-risk">High Risk</span> | Measured | Rating |
+|---|---|---|---|---|---|---|---|
+| H1 | Dynamic Variable Creation | Dynamic-var-from-input occurrences | 0 | 1–10 | >10 | 0 | <span class="rating rating-good">Good</span> |
+| H2 | Global Mutable State | Globals / mutable static state | 0 | 1–5 | >5 | 1 | <span class="rating rating-moderate">Moderate</span> |
+| H3 | Direct SQL Outside Data Layer | Data-layer compliance % | >90% | 60–90% | <60% | 100% | <span class="rating rating-good">Good</span> |
+| H4 | Static / Singleton Abuse | Business-logic static/singleton classes | 0 | 1–5 | >5 | 1 | <span class="rating rating-moderate">Moderate</span> |
+| H5 | Missing Service Layer | Handlers with inline business logic | <10 | 10–20 | >20 | 2 | <span class="rating rating-good">Good</span> |
+| H6 | API Sprawl | Documented & governed endpoints % | >90% | 80–90% | <80% | 0% | <span class="rating rating-high-risk">High Risk</span> |
+| H7 | Missing API Governance | Governance compliance % | 100% | 90–99% | <90% | 0% | <span class="rating rating-high-risk">High Risk</span> |
+| H8 | N+1 Repository Calls (additional) | Service methods with per-item repository loops | 0 | 1–2 | >2 | 1 | <span class="rating rating-moderate">Moderate</span> |
+| H9 | Hardcoded Credentials (additional) | Plaintext secrets in committed config files | 0 | 1–5 | >5 | 2 | <span class="rating rating-moderate">Moderate</span> |
+
+## 4.5 Actions Required
+
+| Hotspot | Action | Rating | Priority |
+|---|---|---|---|
+| H6 API Sprawl | Consolidate risk reads under versioned `/api/v1/risks`; deprecate duplicate MVC JSON paths; publish OpenAPI listing all 8 endpoints | <span class="rating rating-high-risk">High Risk</span> | <span class="sev sev-high">High</span> |
+| H7 Missing API Governance | Add springdoc-openapi, `/api/v1` prefix on `ApiController`, and MockMvc contract tests for `/health` and `/risks` response shapes | <span class="rating rating-high-risk">High Risk</span> | <span class="sev sev-critical">Critical</span> |
+| H2 Global Mutable State | Externalize `AccessControlService` RBAC matrix to immutable `@ConfigurationProperties` or policy service; inject via `PermissionPolicyPort` | <span class="rating rating-moderate">Moderate</span> | <span class="sev sev-medium">Medium</span> |
+| H4 Static / Singleton Abuse | Replace `SharedBusinessServices` static methods with injectable `TenantDialectService` and `RiskIdComposer` beans | <span class="rating rating-moderate">Moderate</span> | <span class="sev sev-medium">Medium</span> |
+| H8 N+1 Repository Calls | Refactor `RiskService.countsByDomain()` to a single `@Query` GROUP BY or `countByDomain` repository method | <span class="rating rating-moderate">Moderate</span> | <span class="sev sev-medium">Medium</span> |
+| H9 Hardcoded Credentials | Move Postgres/Oracle passwords from `application-*.properties` to environment variables or Spring Cloud Config | <span class="rating rating-moderate">Moderate</span> | <span class="sev sev-high">High</span> |
+
+## 4.6 Expected Outcomes
+
+- OpenAPI-backed `/api/v1` endpoints give AngularJS and future consumers a stable, versioned contract and prevent silent breaking changes to `RiskItem` JSON shapes.
+- Extracting `SharedBusinessServices` into injectable services enables per-region dialect routing via Spring profiles and unit-test isolation without static coupling.
+- Externalizing RBAC policy and database credentials removes mutable singleton state and plaintext secrets from committed configuration.
+- A single `RiskService.findByDomainCode()` eliminates duplicated controller logic and reduces API sprawl between MVC and REST entry points.
+- Replacing N+1 domain count queries with aggregated repository methods improves dashboard load time as the risk register scales beyond demo seed data.
+
+---
+
+Full report saved to `target/docs/discovery/04-backend-modernization.md` (406 lines). Verified against **Java 8 / Spring Boot 2.7.18** backend in `glmarvel29-ai/global-hr-modernization`: 17 Java files, 2 controllers, 8 REST endpoints, 0 test files, 0% API governance.
