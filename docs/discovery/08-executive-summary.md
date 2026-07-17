@@ -1,10 +1,10 @@
 # Discovery Executive Summary
 
-**Project:** discovery12345 · **Generated:** 7/17/2026, 2:01:46 PM
+**Project:** discovery12345 · **Generated:** 7/17/2026, 3:08:03 PM
 
 > **Executive Summary**
 >
-> This report consolidates the overall ratings, key findings, and recommended actions from the 6 discovery analyses run across this codebase (frontend and backend). Each section below reproduces that analysis's executive view; full evidence and diagrams live in the individual reports.
+> This report consolidates the overall ratings, key findings, and recommended actions from the 7 discovery analyses run across this codebase (frontend and backend). Each section below reproduces that analysis's executive view; full evidence and diagrams live in the individual reports.
 
 ## Portfolio Overview
 
@@ -16,6 +16,7 @@
 | 4 | Backend Modernization Analysis | <span class="rating rating-high-risk">High Risk</span> | — |
 | 5 | Testing & Quality Assurance Analysis | <span class="rating rating-high-risk">High Risk</span> | — |
 | 6 | Security Analysis | <span class="rating rating-high-risk">High Risk</span> | — |
+| 7 | Technical Debt | <span class="rating rating-high-risk">High Risk</span> | — |
 
 ---
 
@@ -295,3 +296,13 @@ Full report saved to `target/docs/discovery/04-backend-modernization.md` (406 li
 | Unvalidated user URLs in posts | Allow-list http/https URLs for `link`, `imgUrl`, `videoUrl` | <span class="rating rating-moderate">Moderate</span> | <span class="sev sev-medium">Medium</span> |
 | No DevSecOps scanning in CI | Add `npm audit --audit-level=high` and secret scanning to pipeline | <span class="rating rating-high-risk">High Risk</span> | <span class="sev sev-high">High</span> |
 | No security audit logging | Log auth failures and access denials server-side; avoid logging tokens | <span class="rating rating-moderate">Moderate</span> | <span class="sev sev-medium">Medium</span> |
+
+---
+
+## 7. Technical Debt
+
+<div class="overall-rating overall-rating--high-risk"><div class="overall-rating-label">Overall Codebase Rating — Technical Debt &amp; Agentic Readiness</div><div class="overall-rating-value">High Risk</div><div class="overall-rating-note">Driven by High Risk gaps in code repository health (D1), database usage (D4), development environment (D5), and committed-adjacent secrets hygiene (D6) — no CI gate exists to validate agent-authored changes.</div></div>
+
+> **Executive Summary**
+>
+> The TARGET_WORKSPACE combines a compact **ERM Complexity Demo** Spring Boot monolith (31 files on GitHub `main`, zero CI, zero tests) with two **React 18 frontends** used as workbench targets. Repository hygiene is uneven: there is **no top-level `.gitignore`**, **`workbench-demo` lacks any `.gitignore`**, and **`target/.env` plus `.cursor/mcp.json` hold integration tokens locally** without workspace-level exclusion rules. **No `.github/workflows`**, **no `.env.example`**, and **no container/devcontainer path** exist anywhere in scope, so onboarding and agent-authored changes cannot be verified automatically. Database posture relies on **`spring.jpa.hibernate.ddl-auto=update`** with a single flat `risk_register` table and plaintext credentials in profile properties. AI tooling (`.cursor/`, `.kiro/`, `.claude/`, MCP bundles) is present but immature — there is no CI gate to trust agent output. **Overall agentic-harness readiness is High Risk**, driven by absent CI, secrets-adjacent repo hygiene, and non-reproducible dev setup.
