@@ -1,16 +1,17 @@
 # Discovery Executive Summary
 
-**Project:** discovery12345 · **Generated:** 7/17/2026, 1:27:52 PM
+**Project:** discovery12345 · **Generated:** 7/17/2026, 1:33:46 PM
 
 > **Executive Summary**
 >
-> This report consolidates the overall ratings, key findings, and recommended actions from the 1 discovery analysis run across this codebase (frontend and backend). Each section below reproduces that analysis's executive view; full evidence and diagrams live in the individual reports.
+> This report consolidates the overall ratings, key findings, and recommended actions from the 2 discovery analyses run across this codebase (frontend and backend). Each section below reproduces that analysis's executive view; full evidence and diagrams live in the individual reports.
 
 ## Portfolio Overview
 
 | # | Analysis | Overall Rating | Hotspot Score |
 |---|---|---|---|
 | 1 | Architecture & Design Analysis | <span class="rating rating-high-risk">High Risk</span> | — |
+| 2 | Code Quality & Complexity Analysis | <span class="rating rating-high-risk">High Risk</span> | 76 / 100 — High Risk |
 
 ---
 
@@ -59,3 +60,65 @@
 - **Testable domain rules** — extracted reaction/connection helpers become unit-testable without mounting React components.
 - **Lower migration cost** — React Router v6 upgrade unlocks modern layouts, error boundaries, and code-splitting patterns.
 - **Immutable, predictable state** — normalized Redux store removes embedded comment graphs and direct prop mutation anti-patterns.
+
+---
+
+## 2. Code Quality & Complexity Analysis
+
+<div class="overall-rating overall-rating--high-risk"><div class="overall-rating-label">Overall Codebase Rating — Code Quality &amp; Complexity</div><div class="overall-rating-value">High Risk</div><div class="overall-rating-note">Driven by H1 High Cyclomatic Complexity (max CC 41) and H5 Duplicate Code (~12.7%).</div></div>
+
+> **Executive Summary**
+>
+> This analysis covered **96 frontend source files** across two React applications (`social-media-react` at 87 files, `workbench-demo` at 9 files). No backend/server application layer exists in TARGET_WORKSPACE. Overall code quality is **High Risk**, driven by **high cyclomatic complexity** in notification and messaging components (max CC **41**) and **general duplicate code** estimated at **~12.7%** of normalized frontend LOC. File and class sizes remain within good bounds (largest file **212 LOC**; no files exceed 1000 LOC). Redux action modules repeat identical async thunk boilerplate across four files (**42 instances**). Git churn, defect-prone file, and ownership metrics could not be computed because target application sources are **untracked** in the parent repository history.
+
+## 2.1 Benchmark Ratings Summary
+
+Manual cyclomatic inspection (branch/loop/`&&`/`||`/`?:` counting) was used; no ESLint `complexity` rule or Sonar config is present in either project. Duplicate-code percentage derived from normalized 5-line block matching across `social-media-react/src` and `workbench-demo/src`.
+
+| # | Hotspot | Primary KPI | <span class="rating rating-good">Good</span> | <span class="rating rating-moderate">Moderate</span> | <span class="rating rating-high-risk">High Risk</span> | Measured | Rating |
+|---|---|---|---|---|---|---|---|
+| H1 | High Cyclomatic Complexity | Max complexity per method | <10 | 10–20 | >20 | 41 (NotificaitonPreview) | <span class="rating rating-high-risk">High Risk</span> |
+| H2 | Large Classes | Largest class LOC | <300 | 300–1000 | >1000 | 212 (LoginPage.test.tsx / Message.jsx) | <span class="rating rating-good">Good</span> |
+| H3 | Large Functions | Largest function LOC | <50 | 50–200 | >200 | 190 (Signup.jsx `Signup`) | <span class="rating rating-moderate">Moderate</span> |
+| H4 | Business Logic Duplication | Duplicated business logic % | <5% | 5–10% | >10% | ~8% (Redux thunk + auth-form patterns) | <span class="rating rating-moderate">Moderate</span> |
+| H5 | Duplicate Code (general) | Overall duplicate code % | <5% | 5–10% | >10% | ~12.7% (5-line block analysis) | <span class="rating rating-high-risk">High Risk</span> |
+| H6 | High Churn Areas | Monthly changes (top files) | <5 | 5–10 | >10 | n/a (source untracked in git) | <span class="rating rating-good">Good</span> |
+| H7 | Defect-Prone Files | Fix commits (hottest file) | 1–3 | 4–5 | >5 | n/a (source untracked in git) | <span class="rating rating-good">Good</span> |
+| H8 | Ownership Issues | Top-author ownership % | >80% | 60–80% | <60% | n/a (source untracked in git) | <span class="rating rating-good">Good</span> |
+| H9 | Fragmented useEffect Chains (additional) | Max useEffect count per component (target ≤2) | ≤2 | 3 | ≥4 | 3 (NotificaitonPreview.jsx) | <span class="rating rating-moderate">Moderate</span> |
+
+**No additional hotspots beyond H9 were observed.**
+
+### Hotspot Score breakdown
+
+| Component | Weight | Sub-score (0–100) | Weighted |
+|---|---|---|---|
+| Cyclomatic Complexity | 25% → 50% | 88 | 44.0 |
+| Code Churn | 25% | n/a | n/a |
+| Defect Density | 20% | n/a | n/a |
+| Class/Function Size | 15% → 30% | 55 | 16.5 |
+| Business Logic Duplication | 10% → 20% | 75 | 15.0 |
+| Developer Ownership Risk | 5% | n/a | n/a |
+| **Hotspot Score** | **100%** | | **76 / 100** |
+
+## 2.5 Actions Required
+
+| Hotspot | Action | Rating | Priority |
+|---|---|---|---|
+| H1 High Cyclomatic Complexity | Extract `ActivityMessageStrategy` for notification types; split `useChat` hook in `Message.jsx`; enable ESLint `complexity` rule (threshold 15) | <span class="rating rating-high-risk">High Risk</span> | <span class="sev sev-critical">Critical</span> |
+| H3 Large Functions | Extract `AuthFormFields` from `Home.jsx`/`Signup.jsx`; decompose `CommentPreview` handlers into service helpers | <span class="rating rating-moderate">Moderate</span> | <span class="sev sev-medium">Medium</span> |
+| H4 Business Logic Duplication | Introduce shared Redux async action factory; consolidate activity copy into `buildActivityMessage()` | <span class="rating rating-moderate">Moderate</span> | <span class="sev sev-medium">Medium</span> |
+| H5 Duplicate Code (general) | Create shared `FormInputGroup` component; add `test-utils.tsx` helpers in workbench-demo | <span class="rating rating-high-risk">High Risk</span> | <span class="sev sev-high">High</span> |
+| H9 Fragmented useEffect Chains | Replace 3-effect chains in `NotificaitonPreview.jsx` with `useNotificationPreview` hook or React Query | <span class="rating rating-moderate">Moderate</span> | <span class="sev sev-medium">Medium</span> |
+
+## 2.6 Expected Outcomes
+
+- Lower defect rate in notifications and messaging flows by isolating activity-type logic behind Strategy handlers (CC target <15 per function).
+- Faster code reviews and safer refactors as shared form components and Redux thunk factories eliminate ~8–13% duplicated LOC.
+- Improved testability via smaller extracted hooks (`useChat*`, `useNotificationPreview`) that can be unit-tested independently of page components.
+- Reduced stale-closure and double-fetch bugs from consolidated effect management in notification and search components.
+- Future discovery runs can track churn and ownership once frontend projects are committed to git, enabling proactive maintenance of high-change files.
+
+---
+
+Full report saved to `target/docs/discovery/02-code-quality-complexity.md` (321 lines). Pipeline summary: `agent-runs/20260717T132536_tkr1f1/02-code-quality-complexity-summary.md`.
