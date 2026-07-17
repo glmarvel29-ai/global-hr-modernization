@@ -1,10 +1,10 @@
 # Discovery Executive Summary
 
-**Project:** discovery12345 · **Generated:** 7/17/2026, 1:33:46 PM
+**Project:** discovery12345 · **Generated:** 7/17/2026, 1:37:22 PM
 
 > **Executive Summary**
 >
-> This report consolidates the overall ratings, key findings, and recommended actions from the 2 discovery analyses run across this codebase (frontend and backend). Each section below reproduces that analysis's executive view; full evidence and diagrams live in the individual reports.
+> This report consolidates the overall ratings, key findings, and recommended actions from the 3 discovery analyses run across this codebase (frontend and backend). Each section below reproduces that analysis's executive view; full evidence and diagrams live in the individual reports.
 
 ## Portfolio Overview
 
@@ -12,6 +12,7 @@
 |---|---|---|---|
 | 1 | Architecture & Design Analysis | <span class="rating rating-high-risk">High Risk</span> | — |
 | 2 | Code Quality & Complexity Analysis | <span class="rating rating-high-risk">High Risk</span> | 76 / 100 — High Risk |
+| 3 | Frontend Modernization Analysis | <span class="rating rating-high-risk">High Risk</span> | — |
 
 ---
 
@@ -122,3 +123,44 @@ Manual cyclomatic inspection (branch/loop/`&&`/`||`/`?:` counting) was used; no 
 ---
 
 Full report saved to `target/docs/discovery/02-code-quality-complexity.md` (321 lines). Pipeline summary: `agent-runs/20260717T132536_tkr1f1/02-code-quality-complexity-summary.md`.
+
+---
+
+## 3. Frontend Modernization Analysis
+
+<div class="overall-rating overall-rating--high-risk"><div class="overall-rating-label">Overall Codebase Rating — Frontend Modernization</div><div class="overall-rating-value">High Risk</div><div class="overall-rating-note">Driven by H1 UI component duplication (~15% of scanned files replicate loading/preview patterns without a shared library) and H6 legacy Redux store architecture (0% RTK adoption).</div></div>
+
+> **Executive Summary**
+>
+> The `target/` workspace contains two React single-page applications. The primary surface is `social-media-react` (React 18.2.0, legacy Redux `createStore` + thunks, React Router v5), comprising 58 JSX view units plus 3 TypeScript components in `workbench-demo` (React 18.3.1, hooks-only, Tailwind). All 61 scanned components are functional — no class-based components were found. The most severe modernization gaps are duplicated UI patterns (inline loading spinners in 9 files, repeated like-toggle logic in 4 preview components) and legacy global Redux wiring read by 49% of components. `Message.jsx` (250 LOC) mixes chat orchestration, socket side-effects, and view composition in one file, and the messaging feature drills 10+ props through four component layers without a domain composable or context.
+
+## 3.1 Benchmark Ratings Summary
+
+| # | Hotspot | Primary KPI | <span class="rating rating-good">Good</span> | <span class="rating rating-moderate">Moderate</span> | <span class="rating rating-high-risk">High Risk</span> | Measured | Rating |
+|---|---|---|---|---|---|---|---|
+| H1 | UI Component Duplication | Duplicate components % | <5% | 5–10% | >10% | ~15% (9/61 files) | <span class="rating rating-high-risk">High Risk</span> |
+| H2 | Legacy Class-Based Components | Modern component adoption % | >90% | 70–90% | <70% | 100% (61/61) | <span class="rating rating-good">Good</span> |
+| H3 | Massive Components | Largest component LOC | <200 | 200–500 | >500 | 250 (`Message.jsx`) | <span class="rating rating-moderate">Moderate</span> |
+| H4 | Global State Dependencies | Components reading global state % | <30% | 30–60% | >60% | 49% (30/61) | <span class="rating rating-moderate">Moderate</span> |
+| H5 | Complex State Management | Max prop-drilling depth | <3 | 3–5 | >5 | 4 levels (Message → Messaging → ListMsg → MsgPreview) | <span class="rating rating-moderate">Moderate</span> |
+| H6 | Legacy Redux Store (additional) | RTK/modern store adoption % | >90% | 70–90% | <70% | 0% (0/4 modules use RTK) | <span class="rating rating-high-risk">High Risk</span> |
+| H7 | Direct DOM in React Views (additional) | Components using imperative DOM APIs | 0 files | 1–2 files | >2 files | 2 files | <span class="rating rating-moderate">Moderate</span> |
+
+## 3.5 Actions Required
+
+| Hotspot | Action | Rating | Priority |
+|---|---|---|---|
+| H1 UI Component Duplication | Create `src/cmps/shared/` with `LoadingSpinner`, `UserAvatarCard`, and `useLikeReaction`; replace 9 loading blocks and 4 duplicate like handlers | <span class="rating rating-high-risk">High Risk</span> | <span class="sev sev-high">High</span> |
+| H3 Massive Components | Extract `useChat` hook from `Message.jsx`; split `CommentPreview.jsx` and `CreatePostModal.jsx` into subcomponents under 200 LOC each | <span class="rating rating-moderate">Moderate</span> | <span class="sev sev-medium">Medium</span> |
+| H4 Global State Dependencies | Migrate `social-media-react/src/store/` to Redux Toolkit slices; add memoized selectors to reduce ad-hoc `useSelector` inline lambdas | <span class="rating rating-moderate">Moderate</span> | <span class="sev sev-high">High</span> |
+| H5 Complex State Management | Introduce `ChatContext` / `useMessagingState` composable to eliminate 4-level prop drilling in messaging and comment save chains | <span class="rating rating-moderate">Moderate</span> | <span class="sev sev-medium">Medium</span> |
+| H6 Legacy Redux Store | Add `@reduxjs/toolkit`, convert four reducer modules to slices, adopt RTK Query for `userService`/`postService` | <span class="rating rating-high-risk">High Risk</span> | <span class="sev sev-critical">Critical</span> |
+| H7 Direct DOM in React | Refactor `InputFilter.jsx` to controlled autocomplete list; replace `MessageThread.jsx` scroll with `useRef` | <span class="rating rating-moderate">Moderate</span> | <span class="sev sev-medium">Medium</span> |
+
+## 3.6 Expected Outcomes
+
+- A shared component library (`LoadingSpinner`, `UserAvatarCard`, `ReactionButton`) reduces duplicated markup from ~15% of files to near zero and enforces consistent loading and interaction UX.
+- Extracting `useChat`, `useLikeReaction`, and RTK slices improves unit-test coverage for chat and reaction flows without mounting full page trees.
+- Redux Toolkit migration eliminates ~872 LOC of manual boilerplate and provides typed selectors, reducing the 49% global-store coupling through scoped domain hooks.
+- `ChatContext` collapses 10-prop drilling chains in messaging to single-hook consumption, simplifying addition of typing indicators and read receipts.
+- Replacing imperative DOM calls in `InputFilter` and `MessageThread` restores React-idiomatic rendering and prevents event-listener leaks during hot reload.
