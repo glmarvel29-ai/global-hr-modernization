@@ -1,10 +1,10 @@
 # Discovery Executive Summary
 
-**Project:** discovery12345 · **Generated:** 7/17/2026, 1:53:54 PM
+**Project:** discovery12345 · **Generated:** 7/17/2026, 1:57:55 PM
 
 > **Executive Summary**
 >
-> This report consolidates the overall ratings, key findings, and recommended actions from the 4 discovery analyses run across this codebase (frontend and backend). Each section below reproduces that analysis's executive view; full evidence and diagrams live in the individual reports.
+> This report consolidates the overall ratings, key findings, and recommended actions from the 5 discovery analyses run across this codebase (frontend and backend). Each section below reproduces that analysis's executive view; full evidence and diagrams live in the individual reports.
 
 ## Portfolio Overview
 
@@ -14,6 +14,7 @@
 | 2 | Code Quality & Complexity Analysis | <span class="rating rating-high-risk">High Risk</span> | 76 / 100 — High Risk |
 | 3 | Frontend Modernization Analysis | <span class="rating rating-high-risk">High Risk</span> | — |
 | 4 | Backend Modernization Analysis | <span class="rating rating-high-risk">High Risk</span> | — |
+| 5 | Testing & Quality Assurance Analysis | <span class="rating rating-high-risk">High Risk</span> | — |
 
 ---
 
@@ -212,3 +213,46 @@ Full report saved to `target/docs/discovery/02-code-quality-complexity.md` (321 
 ---
 
 Full report saved to `target/docs/discovery/04-backend-modernization.md` (406 lines). Verified against **Java 8 / Spring Boot 2.7.18** backend in `glmarvel29-ai/global-hr-modernization`: 17 Java files, 2 controllers, 8 REST endpoints, 0 test files, 0% API governance.
+
+---
+
+## 5. Testing & Quality Assurance Analysis
+
+<div class="overall-rating overall-rating--high-risk"><div class="overall-rating-label">Overall Codebase Rating — Testing &amp; Quality Assurance</div><div class="overall-rating-value">High Risk</div><div class="overall-rating-note">Driven by zero test coverage (H2), seven untested critical modules (H1), no integration or contract tests (H3/H4), absent CI gate (H6), and no frontend/E2E or Maven test tooling (H7/H8).</div></div>
+
+> **Executive Summary**
+>
+> The `global-hr-modernization` repository is a Java 8 / Spring Boot 2.7 WAR application with a JSP + AngularJS 1.8 frontend layer. Analysis via the GitHub REST API on branch `main` found **zero test files** (`src/test` absent), **no test dependencies** in `pom.xml` (no `spring-boot-starter-test`, JaCoCo, or Surefire coverage gates), and **no CI workflow** (`.github/workflows` not present). Estimated coverage is **0% backend** (17 Java source files) and **0% frontend** (1 AngularJS module + 5 JSP views + 1 CSS file). Seven business-critical modules—including `AccessControlService` (RBAC/ABAC), `RiskService`, `ApiController`, and `DemoDataLoader`—ship with no automated tests. The README quick-start explicitly runs `mvn package -DskipTests`, reinforcing that tests are not part of the delivery path. Overall testing posture is **High Risk** and must be addressed before any modernization or extraction work.
+
+## 5.1 Benchmark Ratings Summary
+
+| # | Hotspot | Primary KPI | <span class="rating rating-good">Good</span> | <span class="rating rating-moderate">Moderate</span> | <span class="rating rating-high-risk">High Risk</span> | Measured | Rating |
+|---|---|---|---|---|---|---|---|
+| H1 | Untested Critical Logic | Critical modules with zero tests | 0 | 1–3 | >3 | 7 critical modules, 0 tests | <span class="rating rating-high-risk">High Risk</span> |
+| H2 | Low Test Coverage | Overall coverage % | >80% | 50–80% | <50% | 0% backend · 0% frontend (test-file ratio) | <span class="rating rating-high-risk">High Risk</span> |
+| H3 | Missing Integration Tests | Boundaries covered % | >70% | 30–70% | <30% | 0% (0 of ~5 key boundaries) | <span class="rating rating-high-risk">High Risk</span> |
+| H4 | Missing Contract Tests | APIs with contract tests % | >80% | 40–80% | <40% | 0% (0 of 8 REST endpoints) | <span class="rating rating-high-risk">High Risk</span> |
+| H5 | Flaky / Skipped Tests | Skipped/flaky test count | 0 | 1–5 | >5 | 0 skipped/disabled tests | <span class="rating rating-good">Good</span> |
+| H6 | No CI Test Gate | Tests enforced in CI | Required gate | Runs, not required | No CI test run | No `.github/workflows`; no CI detected | <span class="rating rating-high-risk">High Risk</span> |
+| H7 | No End-to-End / Frontend Tests (additional) | UI flows covered by E2E or component tests (%) | >60% | 20–60% | <20% | 0% (0 specs for 5 JSP pages + AngularJS shell) | <span class="rating rating-high-risk">High Risk</span> |
+| H8 | No Maven Test Tooling / Coverage Gate (additional) | Build enforces test deps + coverage threshold | Yes | Partial (tests run, no threshold) | No test deps or gate | `pom.xml` lacks `spring-boot-starter-test`, JaCoCo, Surefire gate | <span class="rating rating-high-risk">High Risk</span> |
+
+## 5.4 Actions Required
+
+| Hotspot | Action | Rating | Priority |
+|---|---|---|---|
+| H1 Untested Critical Logic | Add JUnit 5 unit tests for `AccessControlService`, `RiskService`, `SharedBusinessServices`, and slice tests for `ApiController` / `PageController` | <span class="rating rating-high-risk">High Risk</span> | <span class="sev sev-critical">Critical</span> |
+| H2 Low Test Coverage | Add `spring-boot-starter-test`, create `src/test/java` mirroring main packages; target 75% JaCoCo line coverage before refactor | <span class="rating rating-high-risk">High Risk</span> | <span class="sev sev-critical">Critical</span> |
+| H3 Missing Integration Tests | Add `@DataJpaTest` for repository, `@SpringBootTest` for `DemoDataLoader` seeding, MockMvc for controller wiring | <span class="rating rating-high-risk">High Risk</span> | <span class="sev sev-high">High</span> |
+| H4 Missing Contract Tests | Add MockMvc/REST Assured tests for all 8 `/api/*` endpoints asserting status, content-type, and required JSON fields | <span class="rating rating-high-risk">High Risk</span> | <span class="sev sev-high">High</span> |
+| H6 No CI Test Gate | Create `.github/workflows/ci.yml` running `mvn verify` on push/PR with JDK 8+17 matrix; require as branch protection check | <span class="rating rating-high-risk">High Risk</span> | <span class="sev sev-critical">Critical</span> |
+| H7 No E2E / Frontend Tests | Add Playwright E2E specs for 5 JSP routes and Karma unit tests for `erm-app.js` AngularJS controllers | <span class="rating rating-high-risk">High Risk</span> | <span class="sev sev-high">High</span> |
+| H8 No Maven Test Tooling | Add test dependencies, Surefire, and JaCoCo plugins to `pom.xml`; create missing `docs/START_TEST_AND_ISSUES.md` | <span class="rating rating-high-risk">High Risk</span> | <span class="sev sev-medium">Medium</span> |
+
+## 5.5 Expected Outcomes
+
+- RBAC/ABAC security logic and risk register queries are protected by unit tests before any service extraction or modernization.
+- Integration tests validate JPA persistence, startup seeding, and dual-database dialect routing across H2/PostgreSQL/Oracle profiles.
+- Contract tests on eight REST endpoints prevent breaking JSON shape changes from reaching the AngularJS frontend undetected.
+- CI runs `mvn verify` on every pull request, blocking merges when tests fail or coverage drops below the JaCoCo threshold.
+- Playwright E2E tests cover the five JSP dashboard pages, enabling safe JSP-to-SPA migration with a regression safety net.
