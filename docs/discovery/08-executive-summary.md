@@ -1,10 +1,10 @@
 # Discovery Executive Summary
 
-**Project:** discovery12345 · **Generated:** 7/17/2026, 1:57:55 PM
+**Project:** discovery12345 · **Generated:** 7/17/2026, 2:01:46 PM
 
 > **Executive Summary**
 >
-> This report consolidates the overall ratings, key findings, and recommended actions from the 5 discovery analyses run across this codebase (frontend and backend). Each section below reproduces that analysis's executive view; full evidence and diagrams live in the individual reports.
+> This report consolidates the overall ratings, key findings, and recommended actions from the 6 discovery analyses run across this codebase (frontend and backend). Each section below reproduces that analysis's executive view; full evidence and diagrams live in the individual reports.
 
 ## Portfolio Overview
 
@@ -15,6 +15,7 @@
 | 3 | Frontend Modernization Analysis | <span class="rating rating-high-risk">High Risk</span> | — |
 | 4 | Backend Modernization Analysis | <span class="rating rating-high-risk">High Risk</span> | — |
 | 5 | Testing & Quality Assurance Analysis | <span class="rating rating-high-risk">High Risk</span> | — |
+| 6 | Security Analysis | <span class="rating rating-high-risk">High Risk</span> | — |
 
 ---
 
@@ -256,3 +257,41 @@ Full report saved to `target/docs/discovery/04-backend-modernization.md` (406 li
 - Contract tests on eight REST endpoints prevent breaking JSON shape changes from reaching the AngularJS frontend undetected.
 - CI runs `mvn verify` on every pull request, blocking merges when tests fail or coverage drops below the JaCoCo threshold.
 - Playwright E2E tests cover the five JSP dashboard pages, enabling safe JSP-to-SPA migration with a regression safety net.
+
+---
+
+## 6. Security Analysis
+
+<div class="overall-rating overall-rating--high-risk"><div class="overall-rating-label">Overall Codebase Rating — Security</div><div class="overall-rating-value">High Risk</div><div class="overall-rating-note">Driven by DOM XSS, client-side-only auth bypass, secrets in the bundle, and 61 critical/high npm audit findings.</div></div>
+
+> **Executive Summary**
+>
+> The target workspace contains two React 18 single-page applications — **social-media-react** (Redux, React Router v5, Socket.io, session-cookie API client) and **workbench-demo** (TypeScript login demo, React Router v6) — with **no server-side application code** present locally; security depends on an external API referenced at `localhost:3030`. Review covered **both frontend layers** and dependency manifests. The most severe findings are **DOM-based XSS** via unsanitized `innerHTML` in search autocomplete, **client-side-only route protection** (including an unguarded `/dashboard` in workbench-demo), **JWT and user objects stored in browser storage**, a **hard-coded Google Maps API key** shipped in the client bundle, and **115 npm audit findings** (8 critical, 53 high across both apps). No CSP or security headers were found in either `public/index.html`. Overall posture is **High Risk**, driven by exploitable client-side access-control bypass, XSS, exposed secrets, and vulnerable/outdated dependencies.
+
+## 6.1 Security Benchmark Ratings
+
+| # | Security KPI | Target | <span class="rating rating-good">Good</span> | <span class="rating rating-moderate">Moderate</span> | <span class="rating rating-high-risk">High Risk</span> | Measured | Rating |
+|---|---|---|---|---|---|---|---|
+| H1 | Critical Vulnerabilities | 0 | 0 | 1 | >1 | 1 | <span class="rating rating-moderate">Moderate</span> |
+| H2 | High Vulnerabilities | 0 | <5 | 5–10 | >10 | 12 | <span class="rating rating-high-risk">High Risk</span> |
+| H3 | Medium Vulnerabilities | low | <20 | 20–50 | >50 | 4 | <span class="rating rating-good">Good</span> |
+| H4 | Vulnerability Density | <0.5/KLOC | <0.5 | 0.5–1.0 | >1.0 | 2.5/KLOC | <span class="rating rating-high-risk">High Risk</span> |
+| H5 | OWASP Top 10 Compliance | >95% | >95% | 80–95% | <80% | 17% clean (2/12) | <span class="rating rating-high-risk">High Risk</span> |
+| H6 | Critical/High Vulnerable Deps | 0 | 0 | 1 | >1 | 61 | <span class="rating rating-high-risk">High Risk</span> |
+| H7 | Outdated Dependencies | <10% | <10% | 10–25% | >25% | ~35% direct deps outdated/EOL | <span class="rating rating-high-risk">High Risk</span> |
+| H8 | End-of-Life Dependencies | 0 | 0 | 1–5 | >5 | 2 (axios 0.27.x, react-router-dom 5.x) | <span class="rating rating-moderate">Moderate</span> |
+
+## 6.5 Actions Required
+
+| Finding | Action | Rating | Priority |
+|---|---|---|---|
+| DOM XSS via innerHTML autocomplete | Replace `innerHTML` in `InputFilter.jsx` with React-rendered list; encode user display names server-side | <span class="rating rating-high-risk">High Risk</span> | <span class="sev sev-high">High</span> |
+| Client-side-only route protection | Add server-validated `ProtectedRoute` in both apps; guard `/dashboard` in workbench-demo | <span class="rating rating-high-risk">High Risk</span> | <span class="sev sev-high">High</span> |
+| JWT in localStorage | Remove token from `localStorage`; use HttpOnly session cookies | <span class="rating rating-high-risk">High Risk</span> | <span class="sev sev-high">High</span> |
+| User object in sessionStorage | Stop trusting `sessionStorage` user; bootstrap via `GET auth/me` | <span class="rating rating-high-risk">High Risk</span> | <span class="sev sev-high">High</span> |
+| Hard-coded Google Maps API key | Rotate key; move to env var with referrer restrictions | <span class="rating rating-high-risk">High Risk</span> | <span class="sev sev-high">High</span> |
+| Vulnerable npm dependencies (115 total) | Upgrade axios, react-router-dom; run `npm audit fix`; add CI gate | <span class="rating rating-high-risk">High Risk</span> | <span class="sev sev-critical">Critical</span> |
+| Missing CSP / security headers | Add CSP to both `public/index.html` or reverse-proxy headers | <span class="rating rating-moderate">Moderate</span> | <span class="sev sev-medium">Medium</span> |
+| Unvalidated user URLs in posts | Allow-list http/https URLs for `link`, `imgUrl`, `videoUrl` | <span class="rating rating-moderate">Moderate</span> | <span class="sev sev-medium">Medium</span> |
+| No DevSecOps scanning in CI | Add `npm audit --audit-level=high` and secret scanning to pipeline | <span class="rating rating-high-risk">High Risk</span> | <span class="sev sev-high">High</span> |
+| No security audit logging | Log auth failures and access denials server-side; avoid logging tokens | <span class="rating rating-moderate">Moderate</span> | <span class="sev sev-medium">Medium</span> |
