@@ -26,6 +26,13 @@ class SecurityConfigTest {
     }
 
     @Test
+    void loginPageIsPublic() throws Exception {
+        // MAD-133 AC-D06
+        mockMvc.perform(get("/login"))
+                .andExpect(status().isOk());
+    }
+
+    @Test
     @WithMockUser(username = "admin", roles = {"ADMIN"})
     void h2ConsoleDeniedOnDefaultProfile() throws Exception {
         mockMvc.perform(get("/h2-console"))
@@ -37,6 +44,22 @@ class SecurityConfigTest {
     void auditorCanReadSecurityPosture() throws Exception {
         mockMvc.perform(get("/api/security/posture"))
                 .andExpect(status().isOk());
+    }
+
+    @Test
+    @WithMockUser(username = "analyst", roles = {"RISK_ANALYST"})
+    void analystCanReadRiskEndpoints() throws Exception {
+        // MAD-133 AC-D03
+        mockMvc.perform(get("/api/risks"))
+                .andExpect(status().isOk());
+    }
+
+    @Test
+    @WithMockUser(username = "analyst", roles = {"RISK_ANALYST"})
+    void analystCannotReadSecurityPosture() throws Exception {
+        // MAD-133 AC-D05
+        mockMvc.perform(get("/api/security/posture"))
+                .andExpect(status().isForbidden());
     }
 
     @Test
