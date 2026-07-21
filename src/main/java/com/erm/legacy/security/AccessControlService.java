@@ -22,19 +22,22 @@ public class AccessControlService {
     private final Map<String, Set<String>> rolePermissions = new HashMap<String, Set<String>>();
 
     public AccessControlService() {
-        rolePermissions.put("RISK_ADMIN", new HashSet<String>(Arrays.asList(
-                "RISK_READ", "RISK_WRITE", "AUDIT_READ", "VENDOR_ASSESS", "COMPLIANCE_READ")));
-        rolePermissions.put("AUDITOR", new HashSet<String>(Arrays.asList(
-                "RISK_READ", "AUDIT_READ", "COMPLIANCE_READ")));
-        rolePermissions.put("VENDOR_ANALYST", new HashSet<String>(Arrays.asList(
-                "RISK_READ", "VENDOR_ASSESS")));
-        rolePermissions.put("VIEWER", new HashSet<String>(Collections.singletonList("RISK_READ")));
+        rolePermissions.put("ADMIN", new HashSet<String>(Arrays.asList(
+                "risk:read", "risk:write", "audit:read", "vendor:assess", "compliance:read", "integration:read", "security:read")));
+        rolePermissions.put("RISK_ANALYST", new HashSet<String>(Arrays.asList(
+                "risk:read", "integration:read")));
+        rolePermissions.put("INTERNAL_AUDIT", new HashSet<String>(Arrays.asList(
+                "risk:read", "audit:read", "compliance:read", "integration:read", "security:read")));
+        rolePermissions.put("VENDOR_ANALYST", new HashSet<String>(Collections.singletonList("risk:read")));
     }
 
     /** RBAC check */
     public boolean hasPermission(String role, String permission) {
-        Set<String> perms = rolePermissions.get(role);
-        return perms != null && perms.contains(permission);
+        if (role == null || permission == null) {
+            return false;
+        }
+        Set<String> perms = rolePermissions.get(role.toUpperCase());
+        return perms != null && perms.contains(permission.toLowerCase());
     }
 
     /** ABAC-style attribute gate (region + clearance) */
@@ -43,7 +46,7 @@ public class AccessControlService {
             return true;
         }
         if ("RESTRICTED".equalsIgnoreCase(dataClassification)
-                && !"RISK_ADMIN".equals(role) && !"AUDITOR".equals(role)) {
+                && !"ADMIN".equalsIgnoreCase(role) && !"INTERNAL_AUDIT".equalsIgnoreCase(role)) {
             return false;
         }
         // Zero Trust: deny missing region claim
@@ -63,6 +66,7 @@ public class AccessControlService {
         map.put("vulnerabilityManagement", "Continuous (simulated)");
         map.put("legacyNote",
                 "RBAC matrices (RiskGuard) and ABAC policies (VendorSight) co-exist — dual evaluation path.");
+        map.put("rolePermissions", rolePermissions);
         return map;
     }
 }

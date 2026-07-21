@@ -8,6 +8,7 @@ import com.erm.legacy.model.RiskItem;
 import com.erm.legacy.model.ScaleMetrics;
 import com.erm.legacy.security.AccessControlService;
 import com.erm.legacy.service.RiskService;
+import com.erm.legacy.web.DomainQueryResolver;
 import org.springframework.web.bind.annotation.GetMapping;
 import org.springframework.web.bind.annotation.RequestMapping;
 import org.springframework.web.bind.annotation.RequestParam;
@@ -28,13 +29,16 @@ public class ApiController {
     private final RiskService riskService;
     private final IntegrationHub integrationHub;
     private final AccessControlService accessControlService;
+    private final DomainQueryResolver domainQueryResolver;
 
     public ApiController(RiskService riskService,
                          IntegrationHub integrationHub,
-                         AccessControlService accessControlService) {
+                         AccessControlService accessControlService,
+                         DomainQueryResolver domainQueryResolver) {
         this.riskService = riskService;
         this.integrationHub = integrationHub;
         this.accessControlService = accessControlService;
+        this.domainQueryResolver = domainQueryResolver;
     }
 
     @GetMapping("/health")
@@ -50,15 +54,11 @@ public class ApiController {
 
     @GetMapping("/risks")
     public List<RiskItem> risks(@RequestParam(value = "domain", required = false) String domain) {
-        if (domain == null || domain.trim().isEmpty()) {
+        RiskDomain resolved = domainQueryResolver.resolve(domain, "domain");
+        if (resolved == null) {
             return riskService.findAll();
         }
-        for (RiskDomain d : RiskDomain.values()) {
-            if (d.getCode().equalsIgnoreCase(domain) || d.name().equalsIgnoreCase(domain)) {
-                return riskService.findByDomain(d);
-            }
-        }
-        return riskService.findAll();
+        return riskService.findByDomain(resolved);
     }
 
     @GetMapping("/domains")

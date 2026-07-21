@@ -30,4 +30,8 @@ public enum RiskDomain {
     public String getCode() {
         return code;
     }
+
+    public String getKey() {
+        return name();
+    }
 }

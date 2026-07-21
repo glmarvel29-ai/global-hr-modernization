@@ -4,6 +4,7 @@ import com.erm.legacy.integration.IntegrationHub;
 import com.erm.legacy.model.RiskDomain;
 import com.erm.legacy.security.AccessControlService;
 import com.erm.legacy.service.RiskService;
+import com.erm.legacy.web.DomainQueryResolver;
 import org.springframework.stereotype.Controller;
 import org.springframework.ui.Model;
 import org.springframework.web.bind.annotation.GetMapping;
@@ -19,13 +20,25 @@ public class PageController {
     private final RiskService riskService;
     private final IntegrationHub integrationHub;
     private final AccessControlService accessControlService;
+    private final DomainQueryResolver domainQueryResolver;
 
     public PageController(RiskService riskService,
                           IntegrationHub integrationHub,
-                          AccessControlService accessControlService) {
+                          AccessControlService accessControlService,
+                          DomainQueryResolver domainQueryResolver) {
         this.riskService = riskService;
         this.integrationHub = integrationHub;
         this.accessControlService = accessControlService;
+        this.domainQueryResolver = domainQueryResolver;
+    }
+
+    @GetMapping("/login")
+    public String login(@RequestParam(value = "error", required = false) String error,
+                        @RequestParam(value = "logout", required = false) String logout,
+                        Model model) {
+        model.addAttribute("error", error != null);
+        model.addAttribute("logout", logout != null);
+        return "login";
     }
 
     @GetMapping({"/", "/dashboard"})
@@ -43,26 +56,19 @@ public class PageController {
     }
 
     @GetMapping("/risks")
-    public String risks(@RequestParam(value = "domain", required = false) String domainCode,
+    public String risks(@RequestParam(value = "domainCode", required = false) String domainCode,
+                        @RequestParam(value = "domain", required = false) String domain,
                         Model model) {
         model.addAttribute("pageTitle", "Enterprise Risk Register");
         model.addAttribute("domains", riskService.domains());
-        if (domainCode != null && domainCode.trim().length() > 0) {
-            RiskDomain selected = null;
-            for (RiskDomain d : RiskDomain.values()) {
-                if (d.getCode().equalsIgnoreCase(domainCode) || d.name().equalsIgnoreCase(domainCode)) {
-                    selected = d;
-                    break;
-                }
-            }
-            if (selected != null) {
-                model.addAttribute("selectedDomain", selected);
-                model.addAttribute("risks", riskService.findByDomain(selected));
-            } else {
-                model.addAttribute("risks", riskService.findAll());
-            }
-        } else {
+
+        String requested = domainCode != null ? domainCode : domain;
+        RiskDomain selected = domainQueryResolver.resolve(requested, "domain");
+        if (selected == null) {
             model.addAttribute("risks", riskService.findAll());
+        } else {
+            model.addAttribute("selectedDomain", selected);
+            model.addAttribute("risks", riskService.findByDomain(selected));
         }
         return "risks";
     }
@@ -78,7 +84,7 @@ public class PageController {
     public String security(Model model) {
         model.addAttribute("pageTitle", "Security Complexity");
         model.addAttribute("posture", accessControlService.securityPosture());
-        model.addAttribute("rbacAdmin", accessControlService.hasPermission("RISK_ADMIN", "RISK_WRITE"));
+        model.addAttribute("rbacAdmin", accessControlService.hasPermission("ADMIN", "risk:write"));
         model.addAttribute("abacSample",
                 accessControlService.abacAllow("VENDOR_ANALYST", "EU-WEST", "RESTRICTED"));
         return "security";

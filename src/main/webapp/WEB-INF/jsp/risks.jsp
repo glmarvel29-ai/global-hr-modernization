@@ -7,7 +7,7 @@
     <meta name="viewport" content="width=device-width, initial-scale=1"/>
     <title>${pageTitle} | ERM Complexity Demo</title>
     <link rel="stylesheet" href="${pageContext.request.contextPath}/static/css/erm.css"/>
-    <script src="https://ajax.googleapis.com/ajax/libs/angularjs/1.8.3/angular.min.js"></script>
+    <script src="${pageContext.request.contextPath}/static/js/vendor/angular.min.js"></script>
     <script src="${pageContext.request.contextPath}/static/js/erm-app.js"></script>
 </head>
 <body ng-controller="RisksCtrl as vm" ng-init="vm.boot()">
@@ -34,9 +34,12 @@
         <div class="filter-row">
             <a class="chip" href="${pageContext.request.contextPath}/risks">All</a>
             <c:forEach items="${domains}" var="d">
-                <a class="chip" href="${pageContext.request.contextPath}/risks?domain=${d.code}">${d.code} — ${d.label}</a>
+                <a class="chip" href="${pageContext.request.contextPath}/risks?domainCode=${d.key}">${d.code} — ${d.label}</a>
             </c:forEach>
         </div>
+        <c:if test="${not empty domainError}">
+            <p class="muted legacy-callout">${domainError}</p>
+        </c:if>
         <p class="muted legacy-callout">
             LEGACY PROBLEM: Risk IDs keep acquired-product prefixes —
             <code>RG-</code> RiskGuard, <code>AP-</code> AuditPro, <code>VS-</code> VendorSight.
@@ -70,6 +73,7 @@
 
     <section class="panel" ng-cloak>
         <h3>Client filter (AngularJS)</h3>
+        <p class="muted" ng-if="vm.errorMessage">{{vm.errorMessage}}</p>
         <label>Severity
             <select ng-model="vm.severityFilter">
                 <option value="">All</option>

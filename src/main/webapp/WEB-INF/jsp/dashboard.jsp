@@ -7,7 +7,7 @@
     <meta name="viewport" content="width=device-width, initial-scale=1"/>
     <title>${pageTitle} | ERM Complexity Demo</title>
     <link rel="stylesheet" href="${pageContext.request.contextPath}/static/css/erm.css"/>
-    <script src="https://ajax.googleapis.com/ajax/libs/angularjs/1.8.3/angular.min.js"></script>
+    <script src="${pageContext.request.contextPath}/static/js/vendor/angular.min.js"></script>
     <script src="${pageContext.request.contextPath}/static/js/erm-app.js"></script>
 </head>
 <body ng-controller="DashboardCtrl as vm" ng-init="vm.boot()">
@@ -41,6 +41,7 @@
             <span class="pill">Architecture: hybrid monolith + microservices</span>
             <span class="pill">Dual DB dialects ready</span>
         </div>
+        <p class="muted" ng-if="vm.errorMessage" ng-cloak>{{vm.errorMessage}}</p>
     </section>
 
     <section class="grid-2">
@@ -69,10 +70,10 @@
             <h3 class="mt">Legacy Technology Domains</h3>
             <div class="domain-grid">
                 <c:forEach items="${domains}" var="d">
-                    <a class="domain-card" href="${pageContext.request.contextPath}/risks?domain=${d.code}">
+                    <a class="domain-card" href="${pageContext.request.contextPath}/risks?domainCode=${d.key}">
                         <span class="code">${d.code}</span>
                         <span>${d.label}</span>
-                        <em>${domainCounts[d.label]} open</em>
+                        <em>${domainCounts[d.key]} open</em>
                     </a>
                 </c:forEach>
             </div>

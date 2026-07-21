@@ -10,7 +10,7 @@ This demo encodes the technical debt, dual-database reality, integration sprawl,
 
 | Layer | Technology |
 |-------|------------|
-| Backend | Java 8 · Spring Boot 2.7 · Spring MVC |
+| Backend | Java 8 · Spring Boot 2.7 · Spring MVC · Spring Security |
 | Frontend | JSP · AngularJS 1.8 · JSTL |
 | Database | **H2** (default local) · PostgreSQL · Oracle profiles |
 | Packaging | WAR · Embedded Tomcat (Jasper) |
@@ -24,6 +24,23 @@ This demo encodes the technical debt, dual-database reality, integration sprawl,
 - **Integration hub stubs** — SAP, Oracle ERP, ServiceNow, Entra ID, Okta, SIEM, IAM, scanners, HRMS
 - **Security posture surface** — Zero Trust, MFA, RBAC/ABAC, encryption, secrets, monitoring
 - **Explicit legacy debt markers** in code and UI (`/legacy`)
+
+---
+
+## Authentication
+
+All pages and APIs except `/api/health`, `/login`, and static assets require authentication.
+
+Demo users:
+
+| Username | Role |
+|----------|------|
+| `admin` | `ADMIN` |
+| `analyst` | `RISK_ANALYST` |
+| `auditor` | `INTERNAL_AUDIT` |
+| `vendor` | `VENDOR_ANALYST` |
+
+Password for all demo users: `demo123`
 
 ---
 
@@ -52,19 +69,25 @@ Wait for `Started ErmComplexityApplication`, then open:
 
 | Page / API | URL |
 |------------|-----|
+| Login | http://localhost:8090/login |
 | Dashboard | http://localhost:8090/dashboard |
 | Risk Register | http://localhost:8090/risks |
 | Integrations | http://localhost:8090/integrations |
 | Security | http://localhost:8090/security |
 | Legacy Debt | http://localhost:8090/legacy |
 | Health API | http://localhost:8090/api/health |
-| H2 Console | http://localhost:8090/h2-console |
 
 Default port is **8090** (configured because 8080 is often busy).
 
 ### Optional database profiles
 
 ```bash
+# H2 console enabled only in local-dev profile
+mvn spring-boot:run -Dspring-boot.run.profiles=local-dev
+
+# Production-like profile examples (credentials from env vars)
+export ERM_DB_USER=erm
+export ERM_DB_PASSWORD=change-me
 mvn spring-boot:run -Dspring-boot.run.profiles=postgres
 mvn spring-boot:run -Dspring-boot.run.profiles=oracle
 ```
@@ -83,11 +106,13 @@ mvn spring-boot:run -Dspring-boot.run.profiles=oracle
 │   ├── legacy/                    # Explicit debt catalog & shared facade
 │   ├── model/                     # Risk, scale, challenge models
 │   ├── repository/
-│   ├── security/                  # Access-control posture stubs
-│   └── service/
-├── src/main/webapp/WEB-INF/jsp/   # Dashboard, risks, integrations, …
+│   ├── security/                  # Access-control posture + auth config
+│   ├── service/
+│   └── web/                       # API/page validation + exception handlers
+├── src/main/webapp/WEB-INF/jsp/   # Login, dashboard, risks, integrations, …
 ├── src/main/resources/
-│   ├── application.properties           # H2 default (port 8090)
+│   ├── application.properties           # H2 default (secure baseline)
+│   ├── application-local-dev.properties # local debug profile (H2 console)
 │   ├── application-postgres.properties
 │   └── application-oracle.properties
 └── pom.xml
@@ -112,18 +137,6 @@ mvn spring-boot:run -Dspring-boot.run.profiles=oracle
 |-----|---------|
 | [docs/START_TEST_AND_ISSUES.md](docs/START_TEST_AND_ISSUES.md) | Step-by-step start, dependencies, frontend & backend testing |
 | [docs/COMPLEXITY_ISSUES.md](docs/COMPLEXITY_ISSUES.md) | Full Complexity-table category → issue mapping |
-
----
-
-## LOC check
-
-Approximate application sources (exclude `target`):
-
-```powershell
-Get-ChildItem -Recurse -Include *.java,*.jsp,*.js,*.css,*.properties,*.xml |
-  Where-Object { $_.FullName -notmatch '\\target\\' } |
-  Get-Content | Measure-Object -Line
-```
 
 ---
 

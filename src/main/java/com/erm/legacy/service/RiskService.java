@@ -39,7 +39,14 @@ public class RiskService {
     public Map<String, Long> countsByDomain() {
         Map<String, Long> counts = new HashMap<String, Long>();
         for (RiskDomain domain : RiskDomain.values()) {
-            counts.put(domain.getLabel(), (long) repository.findByDomain(domain).size());
+            counts.put(domain.name(), 0L);
+        }
+        List<Object[]> groupedCounts = repository.countGroupByDomain();
+        for (Object[] row : groupedCounts) {
+            if (row != null && row.length == 2 && row[0] instanceof RiskDomain && row[1] instanceof Number) {
+                RiskDomain domain = (RiskDomain) row[0];
+                counts.put(domain.name(), ((Number) row[1]).longValue());
+            }
         }
         return counts;
     }
