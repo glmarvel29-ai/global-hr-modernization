@@ -1,0 +1,363 @@
+---
+agent: task-list-agent
+cli: Cursor Agent CLI
+llm: auto
+run_id: 20260721T093117_dzexko
+generated_at: 2026-07-21T16:55:52.005Z
+---
+[
+  {
+    "id": "T-01",
+    "title": "Create modernization traceability matrix from analysis and design",
+    "description": "Build a field-by-field and decision-by-decision mapping that ties detected Java/Spring findings and validation gaps to concrete implementation points before coding starts.",
+    "files": [
+      "docs/modernization/traceability-matrix.md",
+      "agent-runs/20260721T093117_dzexko/02-design-document.md"
+    ],
+    "acceptance_criteria": [
+      "Matrix maps each field (domain, severity, riskId, title, status, owner, description, region) to at least one implementation artifact.",
+      "Matrix maps each design decision (service boundaries, error envelope, security redaction) to specific code modules or configuration files."
+    ],
+    "priority": "high",
+    "dependencies": [],
+    "estimated_complexity": "medium",
+    "phase": "Phase 1: Analysis & Design Alignment",
+    "traceability": "analysis.field_summary + analysis.field_validations + design.II/III/V/IX",
+    "jira_label_hint": "modernization-traceability"
+  },
+  {
+    "id": "T-02",
+    "title": "Add architecture boundary tests for modular layering",
+    "description": "Add architecture tests so refactoring enforces controller -> application service -> domain service -> repository/adapter boundaries.",
+    "files": [
+      "pom.xml",
+      "src/test/java/com/erm/legacy/architecture/ModuleBoundaryArchTest.java"
+    ],
+    "acceptance_criteria": [
+      "Build fails when controllers directly invoke repositories or integration helpers.",
+      "Architecture tests pass for allowed dependency directions only."
+    ],
+    "priority": "high",
+    "dependencies": [
+      "T-01"
+    ],
+    "estimated_complexity": "medium",
+    "phase": "Phase 1: Analysis & Design Alignment",
+    "traceability": "design.II + design.VIII.sprint0",
+    "jira_label_hint": "architecture-guardrails"
+  },
+  {
+    "id": "T-03",
+    "title": "Introduce modularization and strict-validation feature flags",
+    "description": "Add configuration keys for strict request validation, health redaction, and module toggles so behavior changes can be rolled out safely across profiles.",
+    "files": [
+      "src/main/resources/application.properties",
+      "src/main/resources/application-postgres.properties",
+      "src/main/resources/application-oracle.properties"
+    ],
+    "acceptance_criteria": [
+      "New keys exist for mod.validation.strict-domain, mod.api.redact-health, and mod.security.require-role-posture.",
+      "All new keys can be overridden per profile and environment variable."
+    ],
+    "priority": "high",
+    "dependencies": [
+      "T-01"
+    ],
+    "estimated_complexity": "low",
+    "phase": "Phase 2: Foundations & Data Layer",
+    "traceability": "design.III.rollback + design.VI.config",
+    "jira_label_hint": "feature-flags"
+  },
+  {
+    "id": "T-04",
+    "title": "Implement common API envelope and global error mapper",
+    "description": "Standardize success/error response contracts and centralized exception handling to eliminate ad-hoc map/list responses.",
+    "files": [
+      "src/main/java/com/erm/legacy/api/ApiEnvelope.java",
+      "src/main/java/com/erm/legacy/api/ApiError.java",
+      "src/main/java/com/erm/legacy/api/GlobalExceptionHandler.java",
+      "src/main/java/com/erm/legacy/controller/ApiController.java"
+    ],
+    "acceptance_criteria": [
+      "All /api endpoints return success/data/meta or success=false/error envelopes.",
+      "Validation and forbidden failures return standardized error codes with request id."
+    ],
+    "priority": "high",
+    "dependencies": [
+      "T-02",
+      "T-03"
+    ],
+    "estimated_complexity": "medium",
+    "phase": "Phase 2: Foundations & Data Layer",
+    "traceability": "analysis.error-envelope + design.IV + design.V",
+    "jira_label_hint": "api-contract"
+  },
+  {
+    "id": "T-05",
+    "title": "Add request DTOs and validation rules for risk and security inputs",
+    "description": "Introduce validated request models for domain, severity, and conditional region checks, including explicit enum allow-lists and normalization.",
+    "files": [
+      "src/main/java/com/erm/legacy/api/request/RiskQueryRequest.java",
+      "src/main/java/com/erm/legacy/api/request/SecurityPostureRequest.java",
+      "src/main/java/com/erm/legacy/model/RiskDomain.java",
+      "src/main/java/com/erm/legacy/controller/ApiController.java"
+    ],
+    "acceptance_criteria": [
+      "Invalid domain or severity values return HTTP 422 in strict mode.",
+      "Missing region for restricted posture checks returns HTTP 403.",
+      "Strict mode removes invalid-domain fallback-to-findAll behavior."
+    ],
+    "priority": "high",
+    "dependencies": [
+      "T-03"
+    ],
+    "estimated_complexity": "medium",
+    "phase": "Phase 2: Foundations & Data Layer",
+    "traceability": "analysis.validation-gaps + design.III.field-table + design.V.validation-matrix",
+    "jira_label_hint": "validation-hardening"
+  },
+  {
+    "id": "T-06",
+    "title": "Prepare data-layer hardening and additive migrations",
+    "description": "Add migration support and repository/query capabilities for domain and severity filtering plus planned uniqueness/check constraints with reversible rollout.",
+    "files": [
+      "pom.xml",
+      "src/main/resources/db/migration/postgres/V1_1__risk_register_indexes.sql",
+      "src/main/resources/db/migration/oracle/V1_1__risk_register_indexes.sql",
+      "src/main/java/com/erm/legacy/repository/RiskItemRepository.java",
+      "src/main/java/com/erm/legacy/model/RiskItem.java"
+    ],
+    "acceptance_criteria": [
+      "Additive indexes exist for domain, severity, and domain+status per supported dialect.",
+      "Repository exposes typed filter methods needed by domain service.",
+      "Rollback note or reverse migration is documented."
+    ],
+    "priority": "medium",
+    "dependencies": [
+      "T-03"
+    ],
+    "estimated_complexity": "medium",
+    "phase": "Phase 2: Foundations & Data Layer",
+    "traceability": "design.III.storage-strategy + design.VI.dual-dialect",
+    "jira_label_hint": "data-hardening"
+  },
+  {
+    "id": "T-07",
+    "title": "Split monolithic risk service into application and domain services",
+    "description": "Extract orchestration from RiskService into explicit application/domain services while preserving business semantics and repository usage.",
+    "files": [
+      "src/main/java/com/erm/legacy/service/RiskService.java",
+      "src/main/java/com/erm/legacy/service/application/RiskApplicationService.java",
+      "src/main/java/com/erm/legacy/service/domain/RiskDomainService.java",
+      "src/main/java/com/erm/legacy/service/application/DashboardApplicationService.java",
+      "src/main/java/com/erm/legacy/legacy/LegacyChallengeRegistry.java",
+      "src/main/java/com/erm/legacy/repository/RiskItemRepository.java"
+    ],
+    "acceptance_criteria": [
+      "Controllers no longer depend on repository-coupled service logic directly.",
+      "Domain service owns filtering, counts, and challenge aggregation rules.",
+      "Legacy helper access is encapsulated behind service contracts."
+    ],
+    "priority": "high",
+    "dependencies": [
+      "T-04",
+      "T-05",
+      "T-06"
+    ],
+    "estimated_complexity": "high",
+    "phase": "Phase 3: Incremental Implementation",
+    "traceability": "design.II.boundaries + design.VIII.sprint1",
+    "jira_label_hint": "service-decomposition"
+  },
+  {
+    "id": "T-08",
+    "title": "Refactor ApiController to application-service contracts and strict risk APIs",
+    "description": "Rewire API routes to call application services only, apply validated request DTOs, and enforce strict behavior for invalid domain/severity filters.",
+    "files": [
+      "src/main/java/com/erm/legacy/controller/ApiController.java",
+      "src/main/java/com/erm/legacy/service/application/RiskApplicationService.java",
+      "src/main/java/com/erm/legacy/service/application/IntegrationApplicationService.java",
+      "src/main/java/com/erm/legacy/service/application/SecurityApplicationService.java"
+    ],
+    "acceptance_criteria": [
+      "GET /api/risks returns 422 for invalid filters.",
+      "GET /api/domain-counts, /api/domains, /api/scale, and /api/legacy-challenges preserve current semantics under new boundaries."
+    ],
+    "priority": "high",
+    "dependencies": [
+      "T-07"
+    ],
+    "estimated_complexity": "medium",
+    "phase": "Phase 3: Incremental Implementation",
+    "traceability": "analysis.payload-validation + design.IV + design.V",
+    "jira_label_hint": "controller-refactor"
+  },
+  {
+    "id": "T-09",
+    "title": "Refactor PageController to dashboard and risk application services",
+    "description": "Remove direct dependence on mixed legacy components from page routing and route model composition through application services.",
+    "files": [
+      "src/main/java/com/erm/legacy/controller/PageController.java",
+      "src/main/java/com/erm/legacy/service/application/DashboardApplicationService.java",
+      "src/main/java/com/erm/legacy/service/application/RiskApplicationService.java"
+    ],
+    "acceptance_criteria": [
+      "Dashboard, risks, security, integrations, and legacy pages render with unchanged business content.",
+      "PageController dependencies are application-service only."
+    ],
+    "priority": "medium",
+    "dependencies": [
+      "T-07"
+    ],
+    "estimated_complexity": "medium",
+    "phase": "Phase 3: Incremental Implementation",
+    "traceability": "design.II.presentation-boundary + design.VIII.sprint1",
+    "jira_label_hint": "mvc-boundaries"
+  },
+  {
+    "id": "T-10",
+    "title": "Introduce security and integration service-call adapters and endpoint hardening",
+    "description": "Add internal client-style contracts for security/integration modules, redact sensitive health or posture details, and gate posture access by policy.",
+    "files": [
+      "src/main/java/com/erm/legacy/service/application/SecurityApplicationService.java",
+      "src/main/java/com/erm/legacy/service/application/IntegrationApplicationService.java",
+      "src/main/java/com/erm/legacy/security/AccessControlService.java",
+      "src/main/java/com/erm/legacy/integration/IntegrationHub.java",
+      "src/main/java/com/erm/legacy/controller/ApiController.java"
+    ],
+    "acceptance_criteria": [
+      "GET /api/health redacts sensitive topology fields when redaction flag is enabled.",
+      "GET /api/security/posture enforces role policy and returns standardized forbidden responses.",
+      "Integration endpoint responses are produced through application service adapters."
+    ],
+    "priority": "high",
+    "dependencies": [
+      "T-04",
+      "T-07"
+    ],
+    "estimated_complexity": "medium",
+    "phase": "Phase 3: Incremental Implementation",
+    "traceability": "analysis.health-redaction + design.VII + design.VIII.sprint2-3",
+    "jira_label_hint": "security-hardening"
+  },
+  {
+    "id": "T-11",
+    "title": "Update AngularJS client wiring for envelope responses and validation errors",
+    "description": "Adapt frontend calls to the standardized API envelope and present validation/authorization errors without breaking JSP and AngularJS flows.",
+    "files": [
+      "src/main/resources/static/js/erm-app.js",
+      "src/main/webapp/WEB-INF/jsp/dashboard.jsp",
+      "src/main/webapp/WEB-INF/jsp/risks.jsp",
+      "src/main/webapp/WEB-INF/jsp/security.jsp"
+    ],
+    "acceptance_criteria": [
+      "Client controllers read response payload from res.data.data.",
+      "Validation and forbidden errors display user-facing messages without JS runtime failures.",
+      "Existing dashboard and risks interactions continue to work."
+    ],
+    "priority": "medium",
+    "dependencies": [
+      "T-04",
+      "T-08",
+      "T-10"
+    ],
+    "estimated_complexity": "medium",
+    "phase": "Phase 3: Incremental Implementation",
+    "traceability": "design.IV.compatibility + design.VIII.blast-radius",
+    "jira_label_hint": "frontend-compatibility"
+  },
+  {
+    "id": "T-12",
+    "title": "Add API web-slice tests for validation, errors, and security gating",
+    "description": "Add WebMvc coverage for endpoint contracts, strict query validation, health redaction, and forbidden posture access.",
+    "files": [
+      "src/test/java/com/erm/legacy/controller/ApiControllerWebMvcTest.java",
+      "src/test/java/com/erm/legacy/controller/ApiErrorContractTest.java"
+    ],
+    "acceptance_criteria": [
+      "Tests assert HTTP 200/422/403 scenarios and envelope shape across API endpoints.",
+      "Invalid domain test verifies no fallback to full-list behavior in strict mode."
+    ],
+    "priority": "high",
+    "dependencies": [
+      "T-08",
+      "T-10"
+    ],
+    "estimated_complexity": "medium",
+    "phase": "Phase 4: Testing & Quality Control",
+    "traceability": "design.IV.contracts + design.V.validation-matrix + design.VI.tests",
+    "jira_label_hint": "api-tests"
+  },
+  {
+    "id": "T-13",
+    "title": "Add domain and repository tests for rule enforcement and query behavior",
+    "description": "Cover mandatory/default/invalid/boundary field cases and repository filtering behavior, including ABAC conditional region logic.",
+    "files": [
+      "src/test/java/com/erm/legacy/service/domain/RiskDomainServiceTest.java",
+      "src/test/java/com/erm/legacy/repository/RiskItemRepositoryTest.java",
+      "src/test/java/com/erm/legacy/security/AccessControlServiceTest.java"
+    ],
+    "acceptance_criteria": [
+      "Tests cover riskId/title/status/owner/description constraints and defaults.",
+      "Tests verify severity/domain filters and status transition rule checks.",
+      "ABAC tests verify region-required behavior for restricted data."
+    ],
+    "priority": "high",
+    "dependencies": [
+      "T-06",
+      "T-07"
+    ],
+    "estimated_complexity": "medium",
+    "phase": "Phase 4: Testing & Quality Control",
+    "traceability": "analysis.field_validations + design.III.field-spec + design.V.validation-matrix",
+    "jira_label_hint": "domain-tests"
+  },
+  {
+    "id": "T-14",
+    "title": "Add regression and quality-gate execution task in CI",
+    "description": "Wire build/test quality gates and define regression scope for unchanged routes affected by service-layer refactoring.",
+    "files": [
+      "pom.xml",
+      "README.md",
+      ".github/workflows/ci.yml"
+    ],
+    "acceptance_criteria": [
+      "CI runs mvn clean verify and fails on architecture or API contract regressions.",
+      "README includes reproducible local verification commands.",
+      "Regression checklist includes dashboard, risks, integrations, and security pages."
+    ],
+    "priority": "medium",
+    "dependencies": [
+      "T-11",
+      "T-12",
+      "T-13"
+    ],
+    "estimated_complexity": "low",
+    "phase": "Phase 4: Testing & Quality Control",
+    "traceability": "design.VI.quality-gates + design.VIII.impact",
+    "jira_label_hint": "ci-quality-gates"
+  },
+  {
+    "id": "T-15",
+    "title": "Publish release, migration rollback, and parent-ticket roll-up notes",
+    "description": "Document compatibility assumptions, phased rollout toggles, rollback steps, and manual-review checkpoints for high-risk rules.",
+    "files": [
+      "docs/modernization/release-handoff.md",
+      "docs/modernization/migration-rollback.md",
+      "agent-runs/20260721T093117_dzexko/tasks.json"
+    ],
+    "acceptance_criteria": [
+      "Handoff includes feature-flag rollback and DB migration rollback procedure.",
+      "Manual-review checklist is provided for security and lifecycle-transition logic.",
+      "Document states all tasks roll up under one parent modernization story unless PM tooling requires split parents."
+    ],
+    "priority": "medium",
+    "dependencies": [
+      "T-14"
+    ],
+    "estimated_complexity": "low",
+    "phase": "Phase 5: Handoff Summary",
+    "traceability": "design.III.rollback + design.VII.security + design.X.risks",
+    "jira_label_hint": "release-handoff"
+  }
+]
