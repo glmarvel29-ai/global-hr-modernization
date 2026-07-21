@@ -7,7 +7,7 @@
     <meta name="viewport" content="width=device-width, initial-scale=1"/>
     <title>${pageTitle} | ERM Complexity Demo</title>
     <link rel="stylesheet" href="${pageContext.request.contextPath}/static/css/erm.css"/>
-    <script src="https://ajax.googleapis.com/ajax/libs/angularjs/1.8.3/angular.min.js"></script>
+    <script src="${pageContext.request.contextPath}/static/js/vendor/angular.min.js"></script>
     <script src="${pageContext.request.contextPath}/static/js/erm-app.js"></script>
 </head>
 <body ng-controller="SecurityCtrl as vm" ng-init="vm.boot()">
@@ -35,7 +35,7 @@
             <ul class="stack-list">
                 <li>Zero Trust Architecture: <strong>ON</strong></li>
                 <li>MFA Required: <strong>ON</strong></li>
-                <li>RBAC: RISK_ADMIN write = <strong>${rbacAdmin}</strong></li>
+                <li>RBAC: ADMIN write = <strong>${rbacAdmin}</strong></li>
                 <li>ABAC sample (VENDOR_ANALYST + RESTRICTED): <strong>${abacSample}</strong> (expected false)</li>
                 <li>Encryption at rest &amp; in transit: <strong>ON</strong></li>
                 <li>Secrets: ${posture.secretsManagement}</li>
@@ -46,6 +46,7 @@
         </article>
         <article class="panel" ng-cloak>
             <h2>Posture via AngularJS API</h2>
+            <p class="muted" ng-if="vm.errorMessage">{{vm.errorMessage}}</p>
             <pre class="codeblock">{{vm.posture | json}}</pre>
         </article>
     </section>

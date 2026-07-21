@@ -34,11 +34,13 @@ public class RiskItem {
     @Column(nullable = false, length = 64)
     private RiskDomain domain;
 
+    @Enumerated(EnumType.STRING)
     @Column(nullable = false, length = 16)
-    private String severity;
+    private Severity severity;
 
+    @Enumerated(EnumType.STRING)
     @Column(nullable = false, length = 32)
-    private String status;
+    private RiskStatus status;
 
     @Column(length = 64)
     private String owner;
@@ -78,19 +80,19 @@ public class RiskItem {
         this.domain = domain;
     }
 
-    public String getSeverity() {
+    public Severity getSeverity() {
         return severity;
     }
 
-    public void setSeverity(String severity) {
+    public void setSeverity(Severity severity) {
         this.severity = severity;
     }
 
-    public String getStatus() {
+    public RiskStatus getStatus() {
         return status;
     }
 
-    public void setStatus(String status) {
+    public void setStatus(RiskStatus status) {
         this.status = status;
     }
 
